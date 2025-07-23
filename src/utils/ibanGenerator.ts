@@ -392,3 +392,68 @@ export function getAvailableCountries(): IBANCountryCode[] {
 export function getCountryConfig(countryCode: IBANCountryCode): IBANCountryConfig {
   return countries[countryCode];
 }
+
+/**
+ * Validates an existing IBAN using the mod-97 algorithm
+ * @param iban - The IBAN to validate
+ * @returns True if the IBAN is valid, false otherwise
+ */
+export function validateIBAN(iban: string): boolean {
+  if (!iban || typeof iban !== 'string') {
+    return false;
+  }
+  
+  // Remove spaces and convert to uppercase
+  const cleanIBAN = iban.replace(/\s/g, '').toUpperCase();
+  
+  // Check minimum length
+  if (cleanIBAN.length < 15) {
+    return false;
+  }
+  
+  // Check country code
+  const countryCode = cleanIBAN.substring(0, 2);
+  if (!isValidCountryCode(countryCode)) {
+    return false;
+  }
+  
+  // Check if length matches expected length for country
+  const config = countries[countryCode];
+  if (cleanIBAN.length !== config.length) {
+    return false;
+  }
+  
+  // Check format (basic check for alphanumeric)
+  if (!/^[A-Z0-9]+$/.test(cleanIBAN)) {
+    return false;
+  }
+  
+  try {
+    // Rearrange for mod-97 check: move first 4 chars to end
+    const rearranged = cleanIBAN.substring(4) + cleanIBAN.substring(0, 4);
+    
+    // Convert to numeric string
+    let numericString = '';
+    for (const char of rearranged) {
+      numericString += charToNumber(char);
+    }
+    
+    // Calculate mod 97
+    const remainder = BigInt(numericString) % 97n;
+    
+    // IBAN is valid if remainder is 1
+    return remainder === 1n;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Formats an IBAN with spaces for better readability
+ * @param iban - The IBAN to format
+ * @returns Formatted IBAN with spaces every 4 characters
+ */
+export function formatIBAN(iban: string): string {
+  const cleanIBAN = iban.replace(/\s/g, '');
+  return cleanIBAN.replace(/(.{4})/g, '$1 ').trim();
+}

@@ -5,7 +5,9 @@ import {
   countries, 
   IBANCountryCode, 
   IBANGenerationError,
-  getAvailableCountries 
+  getAvailableCountries,
+  validateIBAN,
+  formatIBAN
 } from '../utils/ibanGenerator';
 
 const Popup: React.FC = () => {
@@ -14,6 +16,7 @@ const Popup: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const [showFormatted, setShowFormatted] = useState<boolean>(false);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -22,6 +25,13 @@ const Popup: React.FC = () => {
     
     try {
       const iban = generateIBAN(selectedCountry);
+      
+      // Validate the generated IBAN
+      const isValid = validateIBAN(iban);
+      if (!isValid) {
+        throw new IBANGenerationError('Generated IBAN failed validation check');
+      }
+      
       setGeneratedIBAN(iban);
     } catch (err) {
       if (err instanceof IBANGenerationError) {
@@ -38,8 +48,10 @@ const Popup: React.FC = () => {
   const handleCopy = async () => {
     if (!generatedIBAN) return;
     
+    const textToCopy = showFormatted ? formatIBAN(generatedIBAN) : generatedIBAN;
+    
     try {
-      await navigator.clipboard.writeText(generatedIBAN);
+      await navigator.clipboard.writeText(textToCopy);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000); // Hide success message after 2 seconds
     } catch (err) {
@@ -55,6 +67,7 @@ const Popup: React.FC = () => {
     setGeneratedIBAN('');
     setError('');
     setCopySuccess(false);
+    setShowFormatted(false);
   };
 
   return (
@@ -127,6 +140,19 @@ const Popup: React.FC = () => {
           <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
             Generated IBAN:
           </label>
+          
+          {/* Display toggle */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+              <input
+                type="checkbox"
+                checked={showFormatted}
+                onChange={(e) => setShowFormatted(e.target.checked)}
+              />
+              Show formatted (with spaces)
+            </label>
+          </div>
+          
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
@@ -134,14 +160,16 @@ const Popup: React.FC = () => {
           }}>
             <input 
               type="text" 
-              value={generatedIBAN}
+              value={showFormatted ? formatIBAN(generatedIBAN) : generatedIBAN}
               readOnly
               style={{ 
                 flex: 1, 
                 padding: '8px', 
                 border: '1px solid #ccc', 
                 borderRadius: '4px',
-                backgroundColor: '#f8f9fa'
+                backgroundColor: '#f8f9fa',
+                fontFamily: 'monospace',
+                fontSize: showFormatted ? '14px' : '13px'
               }}
             />
             <button 
@@ -160,6 +188,18 @@ const Popup: React.FC = () => {
             >
               {copySuccess ? '✓' : 'Copy'}
             </button>
+          </div>
+          
+          {/* IBAN validation indicator */}
+          <div style={{ 
+            marginTop: '8px', 
+            fontSize: '12px', 
+            color: '#28a745',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            ✓ IBAN is valid and ready to use
           </div>
         </div>
       )}
