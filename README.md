@@ -15,7 +15,7 @@ A Chrome Extension for generating valid IBAN numbers for testing purposes. This 
 ## Supported Countries
 
 - 🇳🇱 Netherlands (NL)
-- 🇩🇪 Germany (DE) 
+- 🇩🇪 Germany (DE)
 - 🇫🇷 France (FR)
 - 🇬🇧 United Kingdom (GB)
 - 🇪🇸 Spain (ES)
